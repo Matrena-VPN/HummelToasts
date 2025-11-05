@@ -9,7 +9,15 @@ import UIKit
 
 final class PassthroughWindow: UIWindow {
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        if #available(iOS 18, *) {
+        if #available(iOS 26, *) {
+            let view = super.hitTest(point, with: event)
+            // Новый способ: проверяем слои (iOS 26 поведение)
+            if rootViewController?.view.layer.hitTest(point)?.name == nil {
+                return view
+            } else {
+                return nil
+            }
+        } else if #available(iOS 18, *) {
             let view = super.hitTest(point, with: event)
             
             guard let view, _hitTest(point, from: view) != rootViewController?.view else { return nil }
