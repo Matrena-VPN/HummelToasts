@@ -8,42 +8,43 @@
 import UIKit
 
 final class PassthroughWindow: UIWindow {
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        if #available(iOS 26, *) {
-            let view = super.hitTest(point, with: event)
-            // Новый способ: проверяем слои (iOS 26 поведение)
-            if rootViewController?.view.layer.hitTest(point)?.name == nil {
-                return view
-            } else {
-                return nil
-            }
-        } else if #available(iOS 18, *) {
-            let view = super.hitTest(point, with: event)
-            
-            guard let view, _hitTest(point, from: view) != rootViewController?.view else { return nil }
-            
-            return view
-        } else {
-            let view = super.hitTest(point, with: event)
-            
-            guard view != rootViewController?.view else { return nil }
-            
-            return view
-        }
-    }
+    private var encounteredEvents = Set<UIEvent>()
     
-    private func _hitTest(_ point: CGPoint, from view: UIView) -> UIView? {
-        let converted = convert(point, to: view)
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        guard let rootVC = rootViewController, let rootView = rootVC.view else { return nil }
         
-        guard view.bounds.contains(converted)
-                && view.isUserInteractionEnabled
-                && !view.isHidden
-                && view.alpha > 0
-        else { return nil }
+        let hitView = super.hitTest(point, with: event)
         
-        return view.subviews.reversed()
-            .reduce(Optional<UIView>.none) { result, view in
-                result ?? _hitTest(point, from: view)
-            } ?? view
+        guard let event else {
+            return (hitView == rootView) ? nil : hitView
+        }
+        
+        guard let hitView else {
+            encounteredEvents.removeAll()
+            return nil
+        }
+        
+        if encounteredEvents.contains(event) {
+            encounteredEvents.removeAll()
+            return hitView
+        }
+        
+        if #available(iOS 26, *) {
+            let p = convert(point, to: rootView)
+            if rootView.layer.hitTest(p)?.name == nil {
+                encounteredEvents.insert(event)
+                return hitView
+            }
+        }
+        
+        if hitView == rootView {
+            return nil
+        }
+        
+        if #available(iOS 18, *) {
+            encounteredEvents.insert(event)
+        }
+        
+        return hitView
     }
 }
