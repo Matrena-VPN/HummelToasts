@@ -17,5 +17,5 @@ public protocol Notification: Identifiable, Sendable, View {
 public extension Notification {
     var isBackgroundDarkened: Bool { true }
     var alignment: VerticalAlignment { .center }
-    var animation: Animation { .default }
+    var animation: Animation { .default.speed(2.0) }
 }
